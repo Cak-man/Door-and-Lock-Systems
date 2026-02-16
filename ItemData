@@ -1,0 +1,4 @@
+public static class ItemData
+{
+    public static string lastCollectedItemName;
+}
