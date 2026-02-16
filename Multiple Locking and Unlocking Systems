@@ -1,0 +1,110 @@
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+
+public class DoorUnlockSystem : MonoBehaviour
+{
+    [Header("Kapı Objesi")]
+    public GameObject doorObject;
+
+    [Header("Kilitler")]
+    public List<LockData> locks = new List<LockData>();
+
+    [Header("Raycast Ayarları")]
+    public Camera playerCamera;
+    public float rayDistance = 3f;
+
+    [Header("Mesaj Gösterimi")]
+    public TextMeshProUGUI messageText;
+    public float messageDuration = 2f;
+
+    [Header("Kilit Sayacı (Otomatik Artar)")]
+    public int totalLocks = 0;
+    public int unlockedCount = 0;
+
+    private Coroutine messageCoroutine;
+
+    void Start()
+    {
+        Debug.Log("[DoorUnlockSystem] Başlatılıyor...");
+
+        if (totalLocks == 0)
+        {
+            totalLocks = locks.Count;
+            Debug.Log($"[DoorUnlockSystem] totalLocks otomatik ayarlandı: {totalLocks}");
+        }
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            CheckRaycast();
+        }
+    }
+
+    void CheckRaycast()
+    {
+        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        RaycastHit hit;
+
+        Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.red, 1f);
+
+        if (Physics.Raycast(ray, out hit, rayDistance))
+        {
+            foreach (var lockData in locks)
+            {
+                if (hit.collider.gameObject == lockData.lockObject &&
+                    ItemData.lastCollectedItemName == lockData.requiredItemName &&
+                    !lockData.isUnlocked)
+                {
+                    lockData.isUnlocked = true;
+                    unlockedCount++;
+
+                    // 🔢 SADECE SAYAÇ
+                    ShowMessage($"{unlockedCount}/{totalLocks}");
+
+                    if (AllLocksUnlocked())
+                    {
+                        doorObject.tag = "Door";
+
+                        // 🔢 KAPI AÇILINCA DA AYNI FORMAT
+                        ShowMessage($"{unlockedCount}/{totalLocks}");
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    bool AllLocksUnlocked()
+    {
+        return unlockedCount >= totalLocks;
+    }
+
+    void ShowMessage(string text)
+    {
+        if (messageText == null) return;
+
+        if (messageCoroutine != null)
+            StopCoroutine(messageCoroutine);
+
+        messageCoroutine = StartCoroutine(ShowMessageRoutine(text));
+    }
+
+    System.Collections.IEnumerator ShowMessageRoutine(string text)
+    {
+        messageText.text = text;
+        yield return new WaitForSeconds(messageDuration);
+        messageText.text = "";
+    }
+}
+
+[System.Serializable]
+public class LockData
+{
+    public GameObject lockObject;
+    public string requiredItemName;
+    [HideInInspector] public bool isUnlocked = false;
+}
