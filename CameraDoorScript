@@ -1,0 +1,50 @@
+using UnityEngine;
+using TMPro;
+using System.Collections;
+
+namespace CameraDoorScript
+{
+    public class CameraOpenDoor : MonoBehaviour
+    {
+        public float DistanceOpen = 3f;
+        public TextMeshProUGUI messageText;
+
+        IEnumerator ShowMessage(string message, float duration)
+        {
+            messageText.text = message;
+            yield return new WaitForSeconds(duration);
+            messageText.text = "";
+        }
+
+        void Update()
+        {
+            RaycastHit hit;
+
+            if (Physics.Raycast(transform.position, transform.forward, out hit, DistanceOpen))
+            {
+       
+                if (hit.transform.CompareTag("Door") && Input.GetKeyDown(KeyCode.E))
+                {
+                    hit.transform.GetComponent<Door>().OpenDoor();
+                }
+
+          
+                else if (hit.transform.CompareTag("LockedDoor") && Input.GetKeyDown(KeyCode.E))
+                {
+                    string doorName = hit.transform.name;
+
+                    if (ItemData.lastCollectedItemName == doorName)
+                    {
+                        hit.transform.GetComponent<Door>().OpenDoor();
+                        hit.transform.tag = "Door";
+
+                    }
+                    else
+                    {
+                        StartCoroutine(ShowMessage(doorName + " lazıımdır.", 2f));
+                    }
+                }
+            }
+        }
+    }
+}
